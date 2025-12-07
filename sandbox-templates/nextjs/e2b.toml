@@ -1,0 +1,17 @@
+# This is a config for E2B sandbox template.
+# You can use template ID (kjd0fhwdetkoxd7jwnug) or template name (WebHive-nextjs-test) to create a sandbox:
+
+# Python SDK
+# from e2b import Sandbox, AsyncSandbox
+# sandbox = Sandbox.create("WebHive-nextjs-test") # Sync sandbox
+# sandbox = await AsyncSandbox.create("WebHive-nextjs-test") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'e2b'
+# const sandbox = await Sandbox.create('WebHive-nextjs-test')
+
+team_id = "fbcfbac3-0bd6-4e28-b61f-3c6164616c5a"
+start_cmd = "/compile_page.sh"
+dockerfile = "e2b.Dockerfile"
+template_name = "WebHive-nextjs-test"
+template_id = "kjd0fhwdetkoxd7jwnug"

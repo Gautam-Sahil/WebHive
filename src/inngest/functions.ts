@@ -1,13 +1,22 @@
 import { Sandbox } from "@e2b/code-interpreter";
-import { createAgent, createNetwork, createTool, openai } from "@inngest/agent-kit";
+import { createAgent, createNetwork, createTool, openai, type Tool } from "@inngest/agent-kit";
 import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMesageContent } from "./utils";
 import { z } from "zod";
 import { PROMPT } from "@/prompt";
+import prisma from "@/lib/db";
 
-export const helloWorld = inngest.createFunction(
-  { id: "hello-world" },
-  { event: "test/hello.world" },
+
+interface AgentState {
+  summary: string;
+  files: { [path: string]: string };
+
+};
+
+
+export const AICoderFunction = inngest.createFunction(
+  { id: "AICoder" },
+  { event: "AICoder/run" },
   async ({ event, step }) => {
     
     // 1. Initialize Sandbox
@@ -17,9 +26,9 @@ export const helloWorld = inngest.createFunction(
     });
 
     // 2. Configure the Agent
-    const summarizer = createAgent({
-      name: "summarizer",
-      description: "An Expert coding agent",
+    const AICoder = createAgent<AgentState> ({
+      name: "AICoder",
+      description: "An Expert AI coding agent",
       system: PROMPT,
       model: openai({
         model: "llama-3.3-70b-versatile",
@@ -64,7 +73,7 @@ export const helloWorld = inngest.createFunction(
               }),
             ),
           }),
-          handler: async ({ files }, { step, network }) => {
+          handler: async ({ files }, { step, network }: Tool.Options<AgentState> ) => {
             const newFiles = await step?.run("createOrUpdateFiles", async () => {
               try {
                 const updatedFiles = network.state.data.files || {};
@@ -159,25 +168,55 @@ export const helloWorld = inngest.createFunction(
     });
 
     // --- RESTORING YOUR NETWORK LOGIC ---
-    const network = createNetwork({
+    const network = createNetwork<AgentState>({
       name: "coding-agent-network",
-      agents: [summarizer],
+      agents: [AICoder],
       maxIter: 5,
       router: async ({ network }) => {
         const summary = network.state.data.summary;
         if (summary){
           return;
         }
-        return summarizer;
+        return AICoder;
       },
     });
 
     const result = await network.run(event.data.value);
+    
+    const isError = !result.state.data.summary || Object.keys(result.state.data.files || {}).length === 0;
 
     const sandboxUrl = await step.run("get-sandbox-url", async () => {
       const sandbox = await getSandbox(sandboxId);
       const host = sandbox.getHost(3000);
       return `https://${host}`;
+    });
+
+    await step.run("save-result", async () => {
+      
+      if (isError){
+        return await prisma.message.create({
+          data:{
+            content: "Agent failed to produce a valid result.",
+            role: "ASSISTANT",
+            type: "ERROR",
+          },
+        });
+      }
+
+      return await prisma.message.create({
+        data:{
+          content: result.state.data.summary,
+          role: "ASSISTANT",
+          type: "RESULT",
+          fragment: {
+            create:{
+              sandboxUrl: sandboxUrl,
+              title: "Fragment",
+              files: result.state.data.files,
+            },
+          },
+        },
+      })
     });
 
     return {

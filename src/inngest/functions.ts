@@ -196,6 +196,7 @@ export const AICoderFunction = inngest.createFunction(
       if (isError){
         return await prisma.message.create({
           data:{
+            projectId: event.data.projectId,
             content: "Agent failed to produce a valid result.",
             role: "ASSISTANT",
             type: "ERROR",
@@ -205,6 +206,7 @@ export const AICoderFunction = inngest.createFunction(
 
       return await prisma.message.create({
         data:{
+          projectId: event.data.projectId,
           content: result.state.data.summary,
           role: "ASSISTANT",
           type: "RESULT",

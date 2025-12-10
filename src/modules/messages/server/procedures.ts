@@ -8,10 +8,22 @@ import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 export const messagesRouter = createTRPCRouter({
     getMany: baseProcedure
-    .query(async () => {
+    .input(
+        z.object({
+            projectId: z.string().min(1, { message:"Project ID cannot be empty"  }),
+        })
+    ) 
+
+    .query(async ({ input }) => {
         const message = await prisma.message.findMany({
+            where: {
+                projectId: input.projectId,
+            },
+            include :{
+                fragment: true,
+            },
             orderBy: {
-                updatedAt: 'desc',
+                updatedAt: 'asc',
             },
           
         });
@@ -21,13 +33,18 @@ export const messagesRouter = createTRPCRouter({
     create: baseProcedure
     .input(
         z.object({
-            value: z.string().min(1, { message:"Message cannot be empty" } ),
+            value: z.string()
+            .min(1, { message:"Message cannot be empty" } )
+            .max(10000, { message: "Message cannot exceed 1000 characters"
+                }),
+                projectId: z.string().min(1, { message:"Project ID cannot be empty"  }),
         })
     )
     .mutation(async ({ input }) => {
         // Logic to create a message
       const createMessage = await prisma.message.create({
             data: {
+                    projectId: input.projectId,
                 content: input.value,
                 role: "USER",
                 type: "RESULT",
@@ -37,7 +54,9 @@ export const messagesRouter = createTRPCRouter({
          await inngest.send({
                    name: "AICoder/run",
                   data: {
-                     value: input.value, }
+                     value: input.value,
+                     projectId: input.projectId,
+                    },
               });
         return createMessage;
       

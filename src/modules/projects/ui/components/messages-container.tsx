@@ -50,18 +50,19 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
     <div className='flex flex-col flex-1 min-h-0'>
         <div className='flex-1 min-h-0 overflow-y-auto'>
             <div className='pt-2 pr-1'>
-                {messages.map((message) =>(
-                    <MessageCard
-                    key={message.content}
-                    content={message.content}
-                    role={message.role}
-                    fragment={message.fragment}
-                    createdAt={message.createdAt}
-                    isActiveFragment={activeFragment?.id === message.fragment?.id}
-                    onFragmentClick={() => setActiveFragment(message.fragment)}
-                    type={message.type}
-                    />
-                ))}
+             {messages.map((message) => (
+  <MessageCard
+    key={message.id}
+    content={message.content}
+    role={message.role}
+    fragment={message.fragment}
+    createdAt={message.createdAt}
+    isActiveFragment={activeFragment?.id === message.fragment?.id}
+    onFragmentClick={() => setActiveFragment(message.fragment)}
+    type={message.type}
+  />
+))}
+
                 {isLastMessage && <MessageLoading/>}
              <div ref={bottomref}/>
             </div>

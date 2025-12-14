@@ -2,22 +2,27 @@ import z from "zod";
 import prisma from "@/lib/db";
 import { inngest } from "@/inngest/client";
 
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
+import { auth } from '@clerk/nextjs/server';
+import { TRPCError } from "@trpc/server";
 
 
 
 export const messagesRouter = createTRPCRouter({
-    getMany: baseProcedure
+    getMany: protectedProcedure
     .input(
         z.object({
             projectId: z.string().min(1, { message:"Project ID cannot be empty"  }),
         })
     ) 
 
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
         const message = await prisma.message.findMany({
             where: {
                 projectId: input.projectId,
+                project:{
+                    userId: ctx.auth.userId,
+                }
             },
             include :{
                 fragment: true,
@@ -30,7 +35,7 @@ export const messagesRouter = createTRPCRouter({
         return message;
     }),
 
-    create: baseProcedure
+    create: protectedProcedure
     .input(
         z.object({
             value: z.string()
@@ -40,11 +45,24 @@ export const messagesRouter = createTRPCRouter({
                 projectId: z.string().min(1, { message:"Project ID cannot be empty"  }),
         })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+        const existingproject = await prisma.project.findUnique({
+            where: {
+                id: input.projectId,
+                userId: ctx.auth.userId,
+            },
+        });
+
+        if(!existingproject){
+            throw new TRPCError({
+                code: "NOT_FOUND", 
+                message: "Project Not Found"
+            });
+        }
         // Logic to create a message
       const createMessage = await prisma.message.create({
             data: {
-                    projectId: input.projectId,
+                    projectId: existingproject.id,
                 content: input.value,
                 role: "USER",
                 type: "RESULT",

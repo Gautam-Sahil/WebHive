@@ -2,7 +2,7 @@
 
 
 import { Suspense, useState } from "react";
-import { Fragment } from "@/generated/prisma/client";
+
 import { MessagesContainer } from "../components/messages-container";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ProjectHeader } from './../components/project-header';
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CodeView } from "@/components/code-view";
 import { FileExplorer } from "@/components/file-explorer";
+import { UserControl } from "@/components/user-control";
+import { Fragment } from "@/generated/prisma";
 
 interface props {
   projectId: string;
@@ -78,6 +80,7 @@ export const ProjectView = ({ projectId }: props) => {
                   
                   </Link>
                 </Button>
+                <UserControl/>
                 
               </div>
             

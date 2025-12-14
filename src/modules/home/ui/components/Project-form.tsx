@@ -3,6 +3,7 @@
 import { z } from "zod"
 import { toast } from "sonner";
 import { useState } from "react";
+import { useClerk } from "@clerk/nextjs";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +15,8 @@ import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
 import { PROJECT_TEMPLATES } from "../../contant";
+import { err } from "inngest/types";
+
 
 
 
@@ -29,6 +32,7 @@ const formShema = z.object({
 export const ProjectForm = () => {
 const router = useRouter();
 const trpc = useTRPC();
+const clerk = useClerk();
 const queryClient = useQueryClient();
  const form = useForm<z.infer<typeof formShema>>({
   resolver: zodResolver(formShema),
@@ -47,8 +51,11 @@ const queryClient = useQueryClient();
 
   },
   onError: (error) =>{
-    ///
     toast.error(error.message);
+    if(error.data?.code === "UNAUTHORIZED"){
+      clerk.openSignIn();
+    }
+    
   }
  }));
   

@@ -2,7 +2,8 @@
 
 
 import { Suspense, useState } from "react";
-
+import { ErrorBoundary } from "react-error-boundary"
+import { useAuth } from "@clerk/nextjs";
 import { MessagesContainer } from "../components/messages-container";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ProjectHeader } from './../components/project-header';
@@ -11,16 +12,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeIcon, CrownIcon, EyeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CodeView } from "@/components/code-view";
 import { FileExplorer } from "@/components/file-explorer";
 import { UserControl } from "@/components/user-control";
 import { Fragment } from "@/generated/prisma";
+
 
 interface props {
   projectId: string;
 }
 
 export const ProjectView = ({ projectId }: props) => {
+     const { has } = useAuth();
+    const hasProAccess = has?.({ plan: "pro" });
    
    const [activeFragment, setActiveFragment] = useState<Fragment | null>(null);
 
@@ -33,11 +36,15 @@ export const ProjectView = ({ projectId }: props) => {
             <ResizablePanel
              defaultSize={35}
               minSize={20}
-              className="flex flex-col min-h-0" >
+              className="flex flex-col min-h-0" >           
+              <ErrorBoundary fallback={<p>Project header error aaya! bhago</p>} >
                <Suspense fallback={<p> Loading projects...</p>}>
                 <ProjectHeader
                 projectId={projectId}
-                /></Suspense>
+                />
+                </Suspense>
+                </ErrorBoundary>
+                <ErrorBoundary fallback={<p>Messages Container error aaya! bhago</p>}>
                 <Suspense fallback={
                <p>lodding messages...</p>
                 }>
@@ -45,7 +52,9 @@ export const ProjectView = ({ projectId }: props) => {
       activeFragment={activeFragment}
       setActiveFragment={setActiveFragment}
 
-      /></Suspense>
+      />
+      </Suspense>
+      </ErrorBoundary>
       </ResizablePanel>
         <ResizableHandle className="hover:bg-primary transition-colors" /> 
         {/* withHandle */}
@@ -74,12 +83,14 @@ export const ProjectView = ({ projectId }: props) => {
               </TabsList>
 
               <div className="ml-auto flex items-center gap-x-2">
+                {!hasProAccess && (
                 <Button asChild size="sm" variant="tertiary">
                   <Link href="/pricing">
                   <CrownIcon/> Upgrade
                   
                   </Link>
                 </Button>
+                )}
                 <UserControl/>
                 
               </div>

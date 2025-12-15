@@ -5,6 +5,7 @@ import { inngest } from "@/inngest/client";
 import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { auth } from '@clerk/nextjs/server';
 import { TRPCError } from "@trpc/server";
+import { consumeCredits } from "@/lib/usage";
 
 
 
@@ -59,6 +60,27 @@ export const messagesRouter = createTRPCRouter({
                 message: "Project Not Found"
             });
         }
+        
+        // --- FIX STARTS HERE ---
+        try {
+            await consumeCredits(); 
+        } catch (error) {
+            // Check if it's our specific credit error
+            if (error instanceof Error && error.message === "You have ran out of credits") {
+                throw new TRPCError({
+                    code: "TOO_MANY_REQUESTS",
+                    message: "You have ran out of credits"
+                });
+            }
+
+            // Otherwise, it's a real unexpected error
+            throw new TRPCError({ 
+                code: "BAD_REQUEST", 
+                message: "Something went wrong." 
+            });
+        }
+        // --- FIX ENDS HERE ---
+       
         // Logic to create a message
       const createMessage = await prisma.message.create({
             data: {

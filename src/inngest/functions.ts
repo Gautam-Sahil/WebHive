@@ -1,9 +1,9 @@
 import { Sandbox } from "@e2b/code-interpreter";
-import { createAgent, createNetwork, createTool, openai, type Tool } from "@inngest/agent-kit";
+import { createAgent, createNetwork, createTool, openai, type Tool, type Message, createState } from "@inngest/agent-kit";
 import { inngest } from "./client";
-import { getSandbox, lastAssistantTextMesageContent } from "./utils";
+import { getSandbox, lastAssistantTextMesageContent, parseAgentOutput } from "./utils";
 import { z } from "zod";
-import { PROMPT } from "@/prompt";
+import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
 import prisma from "@/lib/db";
 
 
@@ -13,7 +13,7 @@ interface AgentState {
 
 };
 
-
+  
 export const AICoderFunction = inngest.createFunction(
   { id: "AICoder" },
   { event: "AICoder/run" },
@@ -22,8 +22,40 @@ export const AICoderFunction = inngest.createFunction(
     // 1. Initialize Sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("webhive-nextjs-test");
+    await sandbox.setTimeout(15 * 60_000) // 15 minutes
+
       return sandbox.sandboxId;
     });
+
+    const previousMessage = await step.run("get-previuos-messages", async() => {
+      const formattedMessages: Message[] = [];
+
+      const messages = await prisma.message.findMany({
+        where: {
+          projectId: event.data.projectId,
+        },
+        orderBy:{
+          createdAt: "desc",
+        },
+        take: 5,
+      });
+      for (const message of messages){
+        formattedMessages.push({
+          type: "text",
+          role: message.role === "ASSISTANT" ? "assistant" : "user",
+          content: message.content,
+        })
+      }
+      return formattedMessages.reverse();
+    });
+
+    const state = createState<AgentState>({
+      summary: "",
+      files: {},
+    },
+  {
+    messages: previousMessage,
+  })
 
     // 2. Configure the Agent
     const AICoder = createAgent<AgentState> ({
@@ -113,7 +145,9 @@ export const AICoderFunction = inngest.createFunction(
                         // Remove the import line (e.g., import Footer from '@/components/ui/footer')
                         const importRegex = new RegExp(`import\\s+.*${comp}.*\\s+from\\s+['"].*['"];?`, 'g');
                         cleanContent = cleanContent.replace(importRegex, "");
-                        
+                        // import { format } from 'date-fns';
+// import { Fragment } from '@/generated/prisma/client';
+
                         // Remove the tag usage (e.g., <Footer />)
                         const tagRegex = new RegExp(`<${comp}\\s*\\/?>`, 'g');
                         cleanContent = cleanContent.replace(tagRegex, "");
@@ -172,6 +206,7 @@ export const AICoderFunction = inngest.createFunction(
       name: "coding-agent-network",
       agents: [AICoder],
       maxIter: 5,
+      defaultState: state,
       router: async ({ network }) => {
         const summary = network.state.data.summary;
         if (summary){
@@ -181,7 +216,38 @@ export const AICoderFunction = inngest.createFunction(
       },
     });
 
-    const result = await network.run(event.data.value);
+    const result = await network.run(event.data.value, { state });
+
+  const fragmentTitleGenerator = createAgent({
+      name: "fragment-title-generator",
+      description: "A fragment title generator",
+      system: FRAGMENT_TITLE_PROMPT,
+      model: openai({
+        model: "llama-3.1-8b-instant", // <--- Lightweight, fast, free-tier friendly
+        apiKey: process.env.GROQ_API_KEY,
+        baseUrl: "https://api.groq.com/openai/v1",
+      }),
+    });
+
+    const responsegenerator = createAgent({
+      name: "response-generator",
+      description: "A response generator",
+      system: RESPONSE_PROMPT,
+      model: openai({
+        model: "llama-3.1-8b-instant", // <--- Same here
+        apiKey: process.env.GROQ_API_KEY,
+        baseUrl: "https://api.groq.com/openai/v1",
+      }),
+    });
+
+    const
+     {output: fragmentTitleOutput
+     } = await fragmentTitleGenerator.run(result.state.data.summary);
+     const
+      {output: responseOutput
+      } = await responsegenerator.run(result.state.data.summary);
+
+
     
     const isError = !result.state.data.summary || Object.keys(result.state.data.files || {}).length === 0;
 
@@ -207,13 +273,13 @@ export const AICoderFunction = inngest.createFunction(
       return await prisma.message.create({
         data:{
           projectId: event.data.projectId,
-          content: result.state.data.summary,
+          content: parseAgentOutput(responseOutput),
           role: "ASSISTANT",
           type: "RESULT",
           fragment: {
             create:{
               sandboxUrl: sandboxUrl,
-              title: "Fragment",
+              title: parseAgentOutput(fragmentTitleOutput),
               files: result.state.data.files,
             },
           },

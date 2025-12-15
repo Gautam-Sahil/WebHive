@@ -21,7 +21,7 @@ const Home = () => {
         />
 
       </div>
-           <h1 className="text-2xl md:text-5xl font-bold text-center">Build something with vibe</h1>
+           <h1 className="text-2xl md:text-5xl font-bold text-center">Build something with WebHive</h1>
            <p className="text-lg md:text-xl text-muted-foreground text-center">Create apps and websites by chatting with ai</p>
            <div className="max-w-3xl mx-auto w-full"
            >

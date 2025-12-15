@@ -46,8 +46,12 @@ const queryClient = useQueryClient();
     queryClient.invalidateQueries(
       trpc.projects.getMany.queryOptions(),
     );
+
+     queryClient.invalidateQueries( trpc.usage.status.queryOptions(),);
+
+
     router.push(`/projects/${data.id}`);
-    ////inavildate usage status
+   
 
   },
   onError: (error) =>{
@@ -55,8 +59,12 @@ const queryClient = useQueryClient();
     if(error.data?.code === "UNAUTHORIZED"){
       clerk.openSignIn();
     }
+
+    if(error.data?.code === "TOO_MANY_REQUESTS") {
+         router.push("/pricing")
+    }
     
-  }
+  },
  }));
   
  const onSubmit = async (values: z.infer<typeof formShema>) => {

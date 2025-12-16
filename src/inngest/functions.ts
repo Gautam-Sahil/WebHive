@@ -6,14 +6,11 @@ import { z } from "zod";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
 import prisma from "@/lib/db";
 
-
 interface AgentState {
   summary: string;
   files: { [path: string]: string };
+}
 
-};
-
-  
 export const AICoderFunction = inngest.createFunction(
   { id: "AICoder" },
   { event: "AICoder/run" },
@@ -22,29 +19,24 @@ export const AICoderFunction = inngest.createFunction(
     // 1. Initialize Sandbox
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("webhive-nextjs-test");
-    await sandbox.setTimeout(15 * 60_000) // 15 minutes
-
+      await sandbox.setTimeout(15 * 60_000); 
       return sandbox.sandboxId;
     });
 
-    const previousMessage = await step.run("get-previuos-messages", async() => {
+    // 2. Load History
+    const previousMessage = await step.run("get-previous-messages", async () => {
       const formattedMessages: Message[] = [];
-
       const messages = await prisma.message.findMany({
-        where: {
-          projectId: event.data.projectId,
-        },
-        orderBy:{
-          createdAt: "desc",
-        },
+        where: { projectId: event.data.projectId },
+        orderBy: { createdAt: "desc" },
         take: 5,
       });
-      for (const message of messages){
+      for (const message of messages) {
         formattedMessages.push({
           type: "text",
           role: message.role === "ASSISTANT" ? "assistant" : "user",
           content: message.content,
-        })
+        });
       }
       return formattedMessages.reverse();
     });
@@ -52,20 +44,18 @@ export const AICoderFunction = inngest.createFunction(
     const state = createState<AgentState>({
       summary: "",
       files: {},
-    },
-  {
-    messages: previousMessage,
-  })
+    }, { messages: previousMessage });
 
-    // 2. Configure the Agent
-    const AICoder = createAgent<AgentState> ({
+    // 3. Configure the Agent
+    const AICoder = createAgent<AgentState>({
       name: "AICoder",
       description: "An Expert AI coding agent",
       system: PROMPT,
+      // --- SWITCHED BACK TO MISTRAL DEVSTRAL ---
       model: openai({
-        model: "llama-3.3-70b-versatile",
-        apiKey: process.env.GROQ_API_KEY,
-        baseUrl: "https://api.groq.com/openai/v1",
+        model: "mistralai/devstral-2512:free",
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseUrl: "https://openrouter.ai/api/v1",
       }),
       tools: [
         // --- TERMINAL TOOL ---
@@ -73,126 +63,104 @@ export const AICoderFunction = inngest.createFunction(
           name: "terminal",
           description: "Use the terminal to run commands",
           parameters: z.object({ command: z.string() }),
-          handler: async ({ command }, { step }) => {
-            return await step?.run("terminal", async () => {
-              const buffers = { stdout: "", stderr: "" };
-              try {
-                const sandbox = await getSandbox(sandboxId);
-                const result = await sandbox.commands.run(command, {
-                    onStdout: (data: string) => { buffers.stdout += data; },
-                    onStderr: (data: string) => { buffers.stderr += data; },
-                });
-                return result.stdout;
-              } catch (e) {
-                return `Command failed: ${e}\nstdout: ${buffers.stdout}\nstderr: ${buffers.stderr}`;
-              }
-            });
+          handler: async ({ command }) => {
+             const buffers = { stdout: "", stderr: "" };
+             try {
+               const sandbox = await getSandbox(sandboxId);
+               const result = await sandbox.commands.run(command, {
+                 onStdout: (data: string) => { buffers.stdout += data; },
+                 onStderr: (data: string) => { buffers.stderr += data; },
+               });
+               return result.stdout;
+             } catch (e) {
+               return `Command failed: ${e}\nstdout: ${buffers.stdout}\nstderr: ${buffers.stderr}`;
+             }
           }
         }),
 
-        // --- FILE TOOL (THIS IS THE ONLY THING I MODIFIED TO FIX YOUR BUILD ERRORS) ---
-       // ... inside functions.ts tools ...
-// ... inside functions.ts tools ...
-
+        // --- FILE TOOL (WITH "HOME" & IMPORT FIXES) ---
         createTool({
           name: "createOrUpdateFiles",
           description: "Create or update files in the sandbox",
           parameters: z.object({
-            files: z.array(
-              z.object({
-                path: z.string(),
-                content: z.string(),
-              }),
-            ),
+            files: z.array(z.object({ path: z.string(), content: z.string() })),
           }),
-          handler: async ({ files }, { step, network }: Tool.Options<AgentState> ) => {
-            const newFiles = await step?.run("createOrUpdateFiles", async () => {
-              try {
-                const updatedFiles = network.state.data.files || {};
-                const sandbox = await getSandbox(sandboxId);
+          handler: async ({ files }, { network }) => {
+            try {
+              const updatedFiles = network.state.data.files || {};
+              const sandbox = await getSandbox(sandboxId);
 
-                for (const file of files) {
-                  let cleanContent = file.content;
+              for (const file of files) {
+                let cleanContent = file.content;
 
-                  // --- SANITIZER (CRITICAL FIXES) ---
+                // 1. Basic Cleanup (Markdown & Escapes)
+                cleanContent = cleanContent.replace(/^```[a-z]*\n?/im, "").replace(/```$/im, "");
+                if (cleanContent.includes('\\"')) cleanContent = cleanContent.replace(/\\"/g, '"');
+                if (cleanContent.includes('\\n')) cleanContent = cleanContent.replace(/\\n/g, '\n');
+                if (cleanContent.startsWith('"') && cleanContent.endsWith('"')) cleanContent = cleanContent.slice(1, -1);
 
-                  // 1. Remove Markdown Code Blocks
-                  cleanContent = cleanContent.replace(/^```[a-z]*\n?/im, "").replace(/```$/im, "");
-
-                  // 2. Fix literal "\n" strings
-                  if (cleanContent.includes("\\n")) {
-                    cleanContent = cleanContent.replace(/\\n/g, "\n");
-                  }
-
-                  // 3. Fix "use client" Syntax
-                  const useClientRegex = /^['"]?use client['"]?;?\s*/i;
-                  if (cleanContent.trim().match(useClientRegex)) {
-                     cleanContent = cleanContent.replace(useClientRegex, "");
-                     cleanContent = '"use client";\n' + cleanContent;
-                  }
-
-                  // 4. Fix Hallucinated "Heading" Component
-                  if (cleanContent.includes("Heading")) {
-                    cleanContent = cleanContent.replace(/import\s+.*Heading.*\s+from\s+['"].*['"];?/g, "");
-                    cleanContent = cleanContent.replace(/<Heading/g, "<h1").replace(/<\/Heading>/g, "</h1>");
-                  }
-
-                  // 5. (NEW) Fix Hallucinated Layout Components (Footer, Navigation, etc.)
-                  // The AI invents these, but they don't exist. We strip the import and the tag.
-                  const badComponents = ["Footer", "Navigation", "Header", "Sidebar"];
-                  badComponents.forEach(comp => {
-                    if (cleanContent.includes(comp)) {
-                        // Remove the import line (e.g., import Footer from '@/components/ui/footer')
-                        const importRegex = new RegExp(`import\\s+.*${comp}.*\\s+from\\s+['"].*['"];?`, 'g');
-                        cleanContent = cleanContent.replace(importRegex, "");
-                        // import { format } from 'date-fns';
-// import { Fragment } from '@/generated/prisma/client';
-
-                        // Remove the tag usage (e.g., <Footer />)
-                        const tagRegex = new RegExp(`<${comp}\\s*\\/?>`, 'g');
-                        cleanContent = cleanContent.replace(tagRegex, "");
-                    }
-                  });
-
-                  // --- END SANITIZER ---
-
-                  await sandbox.files.write(file.path, cleanContent);
-                  updatedFiles[file.path] = cleanContent;
+                // 2. FIX: "Home is defined multiple times"
+                // If we import { Home } icon, we MUST rename the component function to something else (e.g., Page)
+                if (cleanContent.includes("import { Home") || cleanContent.includes("import {Home")) {
+                    cleanContent = cleanContent.replace(/export default function Home\(\)/g, "export default function Page()");
                 }
-                return updatedFiles;
-              } catch (e) {
-                return "Error: " + e;
-              }
-            });
 
-            if (typeof newFiles === "object") {
-              network.state.data.files = newFiles;
+                // 3. Fix "use client" ordering
+                const useClientRegex = /^['"]?use client['"]?;?\s*/im;
+                cleanContent = cleanContent.replace(useClientRegex, ""); // Strip existing
+
+                // 4. Auto-Add Imports (Mistral sometimes forgets these)
+                let extraImports = "";
+                if (cleanContent.includes("<Card") && !cleanContent.includes("@/components/ui/card")) {
+                    extraImports += `import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";\n`;
+                }
+                if (cleanContent.includes("<Button") && !cleanContent.includes("@/components/ui/button")) {
+                    extraImports += `import { Button } from "@/components/ui/button";\n`;
+                }
+                if (cleanContent.includes("<Input") && !cleanContent.includes("@/components/ui/input")) {
+                    extraImports += `import { Input } from "@/components/ui/input";\n`;
+                }
+
+                // 5. Reassemble with "use client" at top
+                const needsClient = file.path.includes("page.tsx") || cleanContent.includes("useState") || cleanContent.includes("useEffect") || cleanContent.includes("onClick");
+                if (needsClient) {
+                    cleanContent = `"use client";\n` + extraImports + cleanContent;
+                } else {
+                    cleanContent = extraImports + cleanContent;
+                }
+
+                await sandbox.files.write(file.path, cleanContent);
+                updatedFiles[file.path] = cleanContent;
+              }
+              
+              network.state.data.files = updatedFiles;
+              return updatedFiles;
+            } catch (e) {
+              return "Error writing files: " + e;
             }
           }
         }),
-        // --- READ TOOL ---
+
         createTool({
-            name: "readFiles",
-            description: "Read files from the sandbox",
-            parameters: z.object({ files: z.array(z.string()) }),
-            handler: async ({ files }, { step }) => {
-                return await step?.run("readFiles", async () => {
-                    try {
-                        const sandbox = await getSandbox(sandboxId);
-                        const results = [];
-                        for (const f of files) results.push(await sandbox.files.read(f));
-                        return JSON.stringify(results);
-                    } catch(e) { return "Error reading: " + e}
-                })
-            }
+          name: "readFiles",
+          description: "Read files from the sandbox",
+          parameters: z.object({ files: z.array(z.string()) }),
+          handler: async ({ files }) => {
+              try {
+                const sandbox = await getSandbox(sandboxId);
+                const results = [];
+                for (const f of files) results.push(await sandbox.files.read(f));
+                return JSON.stringify(results);
+              } catch (e) { return "Error reading: " + e; }
+          }
         })
       ],
-      // --- RESTORING YOUR LIFECYCLE LOGIC ---
+      
       lifecycle: {
-        onResponse: async ({ result, network}) => {
+        onResponse: async ({ result, network }) => {
           const lastAssistantMessageText = lastAssistantTextMesageContent(result);
-          if (lastAssistantMessageText && network){
-            if(lastAssistantMessageText.includes("<task_summary>")){
+          if (lastAssistantMessageText && network) {
+            if (lastAssistantMessageText.includes("<task_summary>")) {
               network.state.data.summary = lastAssistantMessageText;
             }
           }
@@ -201,29 +169,31 @@ export const AICoderFunction = inngest.createFunction(
       },
     });
 
-    // --- RESTORING YOUR NETWORK LOGIC ---
     const network = createNetwork<AgentState>({
       name: "coding-agent-network",
       agents: [AICoder],
       maxIter: 5,
       defaultState: state,
       router: async ({ network }) => {
-        const summary = network.state.data.summary;
-        if (summary){
-          return;
-        }
+        if (network.state.data.summary) return;
         return AICoder;
       },
     });
 
     const result = await network.run(event.data.value, { state });
 
-  const fragmentTitleGenerator = createAgent({
+    let finalSummary = result.state.data.summary;
+    const hasFiles = Object.keys(result.state.data.files || {}).length > 0;
+    if (!finalSummary && hasFiles) {
+      finalSummary = "<task_summary>I have generated the requested application files.</task_summary>";
+    }
+
+    // Keep helpers on Groq (Fast & Free)
+    const fragmentTitleGenerator = createAgent({
       name: "fragment-title-generator",
-      description: "A fragment title generator",
       system: FRAGMENT_TITLE_PROMPT,
       model: openai({
-        model: "llama-3.1-8b-instant", // <--- Lightweight, fast, free-tier friendly
+        model: "llama-3.1-8b-instant",
         apiKey: process.env.GROQ_API_KEY,
         baseUrl: "https://api.groq.com/openai/v1",
       }),
@@ -231,25 +201,18 @@ export const AICoderFunction = inngest.createFunction(
 
     const responsegenerator = createAgent({
       name: "response-generator",
-      description: "A response generator",
       system: RESPONSE_PROMPT,
       model: openai({
-        model: "llama-3.1-8b-instant", // <--- Same here
+        model: "llama-3.1-8b-instant",
         apiKey: process.env.GROQ_API_KEY,
         baseUrl: "https://api.groq.com/openai/v1",
       }),
     });
 
-    const
-     {output: fragmentTitleOutput
-     } = await fragmentTitleGenerator.run(result.state.data.summary);
-     const
-      {output: responseOutput
-      } = await responsegenerator.run(result.state.data.summary);
+    const { output: fragmentTitleOutput } = await fragmentTitleGenerator.run(finalSummary || "App");
+    const { output: responseOutput } = await responsegenerator.run(finalSummary || "App built");
 
-
-    
-    const isError = !result.state.data.summary || Object.keys(result.state.data.files || {}).length === 0;
+    const isError = !hasFiles;
 
     const sandboxUrl = await step.run("get-sandbox-url", async () => {
       const sandbox = await getSandbox(sandboxId);
@@ -258,12 +221,11 @@ export const AICoderFunction = inngest.createFunction(
     });
 
     await step.run("save-result", async () => {
-      
-      if (isError){
+      if (isError) {
         return await prisma.message.create({
-          data:{
+          data: {
             projectId: event.data.projectId,
-            content: "Agent failed to produce a valid result.",
+            content: "Agent failed to generate any files.",
             role: "ASSISTANT",
             type: "ERROR",
           },
@@ -271,27 +233,27 @@ export const AICoderFunction = inngest.createFunction(
       }
 
       return await prisma.message.create({
-        data:{
+        data: {
           projectId: event.data.projectId,
           content: parseAgentOutput(responseOutput),
           role: "ASSISTANT",
           type: "RESULT",
           fragment: {
-            create:{
+            create: {
               sandboxUrl: sandboxUrl,
               title: parseAgentOutput(fragmentTitleOutput),
               files: result.state.data.files,
             },
           },
         },
-      })
+      });
     });
 
     return {
-       url: sandboxUrl,
-       title: "Fragment",
-       files: result.state.data.files,
-       summary: result.state.data.summary,
+      url: sandboxUrl,
+      title: "Fragment",
+      files: result.state.data.files,
+      summary: finalSummary,
     };
   },
 );

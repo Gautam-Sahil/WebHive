@@ -7,8 +7,7 @@ WebHive is a next-generation AI development platform that allows users to genera
 ![Status](https://img.shields.io/badge/Status-Beta-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16.0-black)
 ![React](https://img.shields.io/badge/React-19.0-blue)
-![Tailwind](https://img.shields.io/badge/Tailwind_CSS-v4-cyan)
-![License](https://img.shields.io/badge/License-MIT-green)
+
 
 ## ✨ Features
 

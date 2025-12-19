@@ -1,7 +1,7 @@
 import prisma from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const FREE_POINTS = 5;
+const FREE_POINTS = 3;
 const PRO_POINTS = 100;
 const DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 

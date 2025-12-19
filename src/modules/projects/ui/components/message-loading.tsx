@@ -25,7 +25,7 @@ const ShimmerMessages = () =>{
 
     return (
         <div className="flex items-center gap-2">
-            <span className="text-base text-muted-foreground animate-pulse">
+            <span className="text-base text-black dark:text-white animate-pulse">
               {message[currentMessageIndex]}
             </span>
         </div>

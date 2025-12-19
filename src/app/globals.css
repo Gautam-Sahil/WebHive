@@ -4,23 +4,23 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.9818 0.0054 95.0986);
+  --background: oklch(97.259% 0.00873 264.613);
   --foreground: oklch(0.3438 0.0269 95.7226);
-  --card: oklch(0.9818 0.0054 95.0986);
+  --card: oklch(95.796% 0.01512 235.625);
   --card-foreground: oklch(0.1908 0.0020 106.5859);
-  --popover: oklch(1.0000 0 0);
+  --popover: oklch(95.575% 0.01389 272.685);
   --popover-foreground: oklch(0.2671 0.0196 98.9390);
-  --primary: oklch(0.6171 0.1375 39.0427);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.9245 0.0138 92.9892);
+  --primary: oklch(65.948% 0.24939 327.388);
+  --primary-foreground: oklch(95.366% 0.01212 259.931);
+  --secondary: oklch(96.542% 0.01352 241.193);
   --secondary-foreground: oklch(0.4334 0.0177 98.6048);
-  --muted: oklch(0.9341 0.0153 90.2390);
+  --muted: oklch(98.296% 0.00946 222.571);
   --muted-foreground: oklch(0.6059 0.0075 97.4233);
-  --accent: oklch(0.9245 0.0138 92.9892);
+  --accent: oklch(92.472% 0.02752 202.525);
   --accent-foreground: oklch(0.2671 0.0196 98.9390);
   --destructive: oklch(0.1908 0.0020 106.5859);
   --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.8847 0.0069 97.3627);
+  --border: oklch(40.944% 0.13454 276.612);
   --input: oklch(0.7621 0.0156 98.3528);
   --ring: oklch(0.5937 0.1673 253.0630);
   --chart-1: oklch(0.5583 0.1276 42.9956);
@@ -28,14 +28,14 @@
   --chart-3: oklch(0.8816 0.0276 93.1280);
   --chart-4: oklch(0.8822 0.0403 298.1792);
   --chart-5: oklch(0.5608 0.1348 42.0584);
-  --sidebar: oklch(0.9663 0.0080 98.8792);
+  --sidebar: oklch(98.717% 0.01095 211.55);
   --sidebar-foreground: oklch(0.3590 0.0051 106.6524);
   --sidebar-primary: oklch(0.6171 0.1375 39.0427);
-  --sidebar-primary-foreground: oklch(0.9881 0 0);
-  --sidebar-accent: oklch(0.9245 0.0138 92.9892);
+  --sidebar-primary-foreground: oklch(98.809% 0.00011 271.152);
+  --sidebar-accent: oklch(90.428% 0.01408 272.675);
   --sidebar-accent-foreground: oklch(0.3250 0 0);
   --sidebar-border: oklch(0.9401 0 0);
-  --sidebar-ring: oklch(0.7731 0 0);
+  --sidebar-ring: oklch(77.311% 0.00009 271.152);
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -57,7 +57,7 @@
   --card-foreground: oklch(0.9818 0.0054 95.0986);
   --popover: oklch(0.3085 0.0035 106.6039);
   --popover-foreground: oklch(0.9211 0.0040 106.4781);
-  --primary: oklch(0.6724 0.1308 38.7559);
+  --primary: oklch(59.694% 0.18202 143.681);
   --primary-foreground: oklch(1.0000 0 0);
   --secondary: oklch(0.9818 0.0054 95.0986);
   --secondary-foreground: oklch(0.3085 0.0035 106.6039);
@@ -67,7 +67,7 @@
   --accent-foreground: oklch(0.9663 0.0080 98.8792);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.3618 0.0101 106.8928);
+  --border: oklch(60.821% 0.20046 302.904);
   --input: oklch(0.4336 0.0113 100.2195);
   --ring: oklch(0.5937 0.1673 253.0630);
   --chart-1: oklch(0.5583 0.1276 42.9956);
@@ -165,6 +165,34 @@
     cursor: pointer;
   }
 }
+@keyframes shine {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.shine-border {
+  background: conic-gradient(
+    from 0deg,
+    #00f5ff,
+    #000000,
+    #000000,
+    #00f5ff,
+    #000000,
+    #000000,
+    #000000,
+    #00f5ff
+  );
+  background-size: 300% 300%;
+  animation: shine 6s ease-out infinite;
+}
+
 
 /* Animations */
 @theme inline {
@@ -185,6 +213,7 @@
       transform: translateX(-50%) translateY(-10%);
     }
   }
+  
  
   @keyframes moveInCircle {
     0% {
@@ -209,4 +238,5 @@
       transform: translateY(-50%);
     }
   }
+
 }

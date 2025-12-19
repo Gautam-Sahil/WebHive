@@ -2,7 +2,7 @@ import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { Fragment } from "@/generated/prisma";
 
-import { ExternalLinkIcon, RefreshCcwIcon } from "lucide-react";
+import { ExternalLinkIcon, RotateCwIcon } from "lucide-react";
 import { useState } from "react";
 
 
@@ -32,7 +32,7 @@ export function FragmentWeb ({ data }: props) {
             <div className="p-2 border-b bg-sidebar flex items-center gap-x-2">
                  <Hint text=" Refresh" side="bottom" align="start">
                  <Button size="sm" variant="outline" onClick={onRefresh}>
-                    <RefreshCcwIcon/>
+                    <RotateCwIcon/>
                  </Button></Hint>
                   <Hint text="Click to Copy" side="bottom" >
                   <Button size="sm" variant="outline" onClick={handleCopy}

@@ -76,7 +76,7 @@ export const projectsRouter = createTRPCRouter({
          const createdProject = await prisma.project.create({
             data: {
                 userId: ctx.auth.userId,
-                name: generateSlug(2, { format: "kebab", }),
+                name:"New Project",
                 messages: {create: {
                     content: input.value,
                     role: "USER",

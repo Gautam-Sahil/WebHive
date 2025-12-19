@@ -13,10 +13,33 @@ import { CopyCheckIcon, CopyIcon } from 'lucide-react';
 
 type FileCollection = { [path: string]: string };
 
-function getLanguageFRomExtansion (filename: string): string {
-    const extension = filename.split(".").pop()?.toLowerCase();
-    return extension || "text";
-};
+function getLanguageFromExtension(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase();
+
+  switch (ext) {
+    case "ts":
+      return "typescript";
+    case "tsx":
+      return "tsx";
+    case "js":
+      return "javascript";
+    case "jsx":
+      return "jsx";
+    case "json":
+      return "json";
+    case "css":
+      return "css";
+    case "html":
+      return "markup";
+    case "py":
+      return "python";
+    case "sh":
+      return "bash";
+    default:
+      return "text";
+  }
+}
+
 
 interface FileBreadCrumbProps{
     filepath: string;
@@ -123,6 +146,9 @@ export const FileExplorer = ({
 
         <ResizablePanelGroup direction='horizontal'>
             <ResizablePanel defaultValue={30} minSize={30} className='bg-sidebar'>
+                <div className="p-3 text-xs font-bold text-foreground uppercase ">
+                    Explorer
+                </div>
               <TreeView
               data={treeData}
               value={selectedFile}
@@ -153,7 +179,8 @@ export const FileExplorer = ({
                     </div>
                    <div className='flex-1 overflow-auto'>
                     <CodeView code={files[selectedFile]}
-                    lang={getLanguageFRomExtansion(selectedFile)} />
+                lang={getLanguageFromExtension(selectedFile)}
+ />
                    </div>
                 </div>
 

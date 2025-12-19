@@ -15,7 +15,7 @@ import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
 import { PROJECT_TEMPLATES } from "../../contant";
-import { err } from "inngest/types";
+
 
 
 
@@ -90,63 +90,93 @@ const queryClient = useQueryClient();
  
     <Form {...form}>
            <section className="space-y-6">
-      <form onSubmit={form.handleSubmit(onSubmit) }
-      className={cn("relative border p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all", isFocused && "shadow-xs","rounded-t-none",)}
-      >
-        <FormField
-        control={form.control}
-        name="value"
-        render={({field}) =>(
+ <form
+  onSubmit={form.handleSubmit(onSubmit)}
+  className="relative group"
+>
+  {/* glow */}
+  <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-teal-500/50 via-cyan-500/50 to-blue-500/50 blur-2xl opacity-0 group-hover:opacity-40 transition-all duration-500" />
+
+  <div
+    className={cn(
+      "relative rounded-2xl bg-gradient-to-br from-gray-900 to-black border-2 shadow-2xl transition-all",
+      isFocused ? "border-teal-200" : "border-amber-400"
+    )}
+  >
+    <FormField
+      control={form.control}
+      name="value"
+      render={({ field }) => (
+        <div className="relative p-2">
           <TextareaAutosize
-          {...field}
-          disabled={isPending}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          minRows={2}
-          maxRows={8}
-          className="pt-4 resize-none border-none w-full outline-none bg-transparent"
-          placeholder="Enter a prompt here."
-           onKeyDown={(e) => {
-            if(e.key === "Enter" && (e.ctrlKey || e.metaKey) ){
-              e.preventDefault();
-              form.handleSubmit(onSubmit)(e);
-            }
-           }}
+            {...field}
+            disabled={isPending}
+            minRows={3}
+            maxRows={undefined}
+  style={{ overflowY: "hidden" }}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder="Describe what you want to build..."
+         className={cn(
+    "w-full min-h-[120px] px-6 py-6 pr-28 resize-none bg-transparent",
+    "border-none outline-none text-base text-white", "placeholder:text-muted-foreground leading-relaxed", "overflow-y-auto scrollbar-hide" 
+
+)}
+
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                form.handleSubmit(onSubmit)(e);
+              }
+            }}
           />
-        )}
-        />
 
-        <div className="flex gap-x-2 items-end justify-between pt-2">
-          <div className="text-[10px] text-muted-foreground font-mono">
-            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              <span>&#8984;</span>
-            </kbd>
-            &nbsp; to submit
+          {/* submit */}
+        <div className="absolute right-6 bottom-9 translate-y-1/2 ">
 
+            <Button
+              type="submit"
+              disabled={isButtonDisabled}
+              className={cn(
+                "w-11 h-11 rounded-xl transition-all",
+                isButtonDisabled
+                  ? "bg-muted dark:bg-amber-300/40 text-muted-foreground cursor-not-allowed"
+                  : "bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/40 hover:scale-110 active:scale-95"
+              )}
+            >
+              {isPending ? (
+                <Loader2Icon className="w-6 h-6 animate-spin" />
+              ) : (
+                <ArrowUpIcon className="w-6 h-6" />
+              )}
+            </Button>
           </div>
-           <Button
-           disabled={isButtonDisabled}
-           className={cn("size-8 rounded-full",
-            isButtonDisabled && "bg-muted-foreground border"
-           )}
-           >
-            {isPending ? (
-              <Loader2Icon className="size-4 animate-spin" />
-
-            ) : (
-              <ArrowUpIcon/>
-            )}
-            
-
-           </Button>
         </div>
-      </form>
+      )}
+    />
+
+    {/* footer */}
+    {isFocused && (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-blue-500/50 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-cyan-500 animate-pulse" />
+          AI generation ready
+        </div>
+        <div>
+          <kbd className="px-2 py-1 rounded bg-muted border mx-1">⌘</kbd>
+          <kbd className="px-2 py-1 rounded bg-muted border mx-1">↵</kbd>
+         <span className="text-teal-400">to submit</span>
+        </div>
+      </div>
+    )}
+  </div>
+</form>
       <div className="flex-wrap justify-center gap-2 hidden md:flex max-w-3xl ">
         {PROJECT_TEMPLATES.map((template) => (
             <Button key={template.title}
             variant="outline"
             size="sm"
-            className="bg-white dark:bg-sidebar"
+            className="bg-white dark:bg-sidebar dark:hover:bg-teal-500/50"
             onClick={() => onSelect(template.prompt)}>
                 {template.emoji} {template.title}
 

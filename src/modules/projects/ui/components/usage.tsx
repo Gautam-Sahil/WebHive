@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/nextjs";
 import { formatDuration, intervalToDuration } from "date-fns";
-import { CrownIcon } from "lucide-react";
+import { ChessQueenIcon, CrownIcon } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -51,7 +51,7 @@ export const Usage = ({ points, msBeforeNext }: Props) => {
          {!hasProAccess && (
         <Button asChild size="sm" variant="tertiary" className="ml-auto">
           <Link href="/pricing">
-            <CrownIcon className="mr-1 h-4 w-4" />
+            <ChessQueenIcon className="mr-1 h-4 w-4" />
             Upgrade
           </Link>
         </Button>

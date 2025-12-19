@@ -227,59 +227,59 @@ export const AICoderFunction = inngest.createFunction(
     });
 
     // 7. RENAME PROJECT (STRICT 2 WORDS)
-    await step.run("generate-project-name", async () => {
-        try {
-            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: "llama-3.1-8b-instant",
-                    messages: [
-                        { 
-                          role: "system", 
-                          // STRICT PROMPT FOR 2 WORDS
-                          content: "You are a Project naming bot generator. Reply with a JSON object containing a 'name' field. The name must be meaningful according to prompt and  STRICTLY 1 or 2 words(max) maximum words. Example: {\"name\": \"Calculator App\"}" 
-                        },
-                        { role: "user", content: `User Prompt: ${event.data.value}` }
-                    ],
-                    response_format: { type: "json_object" },
-                    max_tokens: 50 
-                })
-            });
-
-            if (!response.ok) return;
-
-            const data = await response.json();
-            let cleanName = "New Project";
-            try {
-                const parsed = JSON.parse(data.choices?.[0]?.message?.content);
-                cleanName = parsed.name || "New Project";
-            } catch (e) {
-               cleanName = data.choices?.[0]?.message?.content?.split(" ")[0] || "New Project";
-            }
-
-            // CLEANUP & HARD LIMIT TO 3 WORDS MAX (Just in case AI hallucinates 4 words)
-            // .slice(0, 3) ensures the array never has more than 3 parts (e.g. "future-autopilot-landing" -> "future-autopilot-landing")
-            // If result was "future-autopilot-landing-page", it becomes "future-autopilot-landing"
-            cleanName = cleanName.toLowerCase()
-                .replace(/[^a-z0-9-]/g, "") // remove special chars
-                .split(" ")
-                .slice(0, 3) // <--- THIS IS THE HARD SCISSOR
-                .join(" ");
-
-            if (cleanName && cleanName.length > 2) {
-                await prisma.project.update({
-                    where: { id: event.data.projectId },
-                    data: { name: cleanName }
-                });
-            }
-        } catch (error) {
-            console.error("Renaming failed:", error);
-        }
+   await step.run("generate-project-name", async () => {
+  try {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a Project naming bot generator. Reply with a JSON object containing a 'name' field. The name must be meaningful according to prompt and strictly 1-3 words maximum. Example: {\"name\": \"Calculator App\"}" 
+          },
+          { role: "user", content: `User Prompt: ${event.data.value}` }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 50 
+      })
     });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+    let cleanName = "New Project";
+
+    try {
+      const parsed = JSON.parse(data.choices?.[0]?.message?.content);
+      cleanName = parsed.name || "New Project";
+    } catch (e) {
+      cleanName = data.choices?.[0]?.message?.content?.trim() || "New Project";
+    }
+
+    // Limit to max 3 words, capitalize each, remove unwanted symbols
+    cleanName = cleanName
+      .split(" ")
+      .slice(0, 3)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+      .replace(/[^A-Za-z0-9 ]/g, "");
+
+    if (cleanName && cleanName.length > 2) {
+      await prisma.project.update({
+        where: { id: event.data.projectId },
+        data: { name: cleanName }
+      });
+    }
+  } catch (error) {
+    console.error("Renaming failed:", error);
+  }
+});
+
 
     return {
       url: sandboxUrl,

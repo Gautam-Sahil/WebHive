@@ -2,7 +2,7 @@
 
 **Build full-stack web apps instantly by chatting with AI.**
 
-<img width="1919" height="864" alt="Screenshot 2025-12-19 181107" src="https://github.com/user-attachments/assets/3504f7b9-e202-4c4c-9289-35e6daa6d6bf" />
+<img width="1919" height="864" alt="Screenshot 2025-12-19 181107" src="https://github.com/user-attachments/assets/c4d0a443-087d-4ee7-8790-bb9ef437365e" />
 
 
 

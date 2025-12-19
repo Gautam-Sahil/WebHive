@@ -52,16 +52,4 @@ Built with the **T3 Stack** ideology, leveraging the latest bleeding-edge techno
 
 ---
 
-## 🚀 Getting Started
-
-Follow these steps to set up the project locally.
-
-### Prerequisites
-- Node.js 20+
-- A Neon Database (PostgreSQL)
-- Accounts for Clerk, OpenRouter, E2B, and Inngest.
-
-### 1. Clone the repository
-```bash
-git clone [https://github.com/your-username/web-hive.git](https://github.com/your-username/web-hive.git)
-cd web-hive
+Developed with ❤️ by [Gautam Tiwari]

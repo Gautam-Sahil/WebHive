@@ -2,6 +2,10 @@
 
 **Build full-stack web apps instantly by chatting with AI.**
 
+<img width="1919" height="864" alt="Screenshot 2025-12-19 181107" src="https://github.com/user-attachments/assets/3504f7b9-e202-4c4c-9289-35e6daa6d6bf" />
+
+
+
 WebHive is a next-generation AI development platform that allows users to generate, visualize, and deploy web applications in real-time. Unlike standard chatbots, WebHive spins up secure cloud sandboxes to run code live as it's being written.
 
 ![Status](https://img.shields.io/badge/Status-Beta-blue)

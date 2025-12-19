@@ -22,7 +22,10 @@ pre[class*='language-'] {
   color: #050506;
 }
 
-.token.comment,
+.token.comment {
+   color: #0ca220;
+}
+
 .token.prolog,
 .token.doctype,
 .token.cdata {
@@ -103,7 +106,7 @@ pre[class*='language-'] {
 .dark .token.prolog,
 .dark .token.doctype,
 .dark .token.cdata {
-  color: #209b13; /* comment */
+  color: #18ab07; /* comment */
 }
 
 .dark .token.punctuation {

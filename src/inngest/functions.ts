@@ -227,7 +227,7 @@ export const AICoderFunction = inngest.createFunction(
     });
 
     // 7. RENAME PROJECT (STRICT 2 WORDS)
-   await step.run("generate-project-name", async () => {
+ await step.run("generate-project-name", async () => {
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -252,33 +252,38 @@ export const AICoderFunction = inngest.createFunction(
     if (!response.ok) return;
 
     const data = await response.json();
-    let cleanName = "New Project";
+    let rawName = "New Project";
 
     try {
       const parsed = JSON.parse(data.choices?.[0]?.message?.content);
-      cleanName = parsed.name || "New Project";
+      rawName = parsed.name || "New Project";
     } catch (e) {
-      cleanName = data.choices?.[0]?.message?.content?.trim() || "New Project";
+      rawName = data.choices?.[0]?.message?.content?.trim() || "New Project";
     }
 
-    // Limit to max 3 words, capitalize each, remove unwanted symbols
-    cleanName = cleanName
-      .split(" ")
-      .slice(0, 3)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-      .replace(/[^A-Za-z0-9 ]/g, "");
+    // --- CLEANING LOGIC ---
+    // 1. Split PascalCase / camelCase properly
+    rawName = rawName
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
 
+    // 2. Limit to max 3 words
+    const words = rawName.split(/\s+/).filter(Boolean).slice(0, 3);
+    const cleanName = words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+    // 3. Update in DB
     if (cleanName && cleanName.length > 2) {
       await prisma.project.update({
         where: { id: event.data.projectId },
         data: { name: cleanName }
       });
     }
+
   } catch (error) {
     console.error("Renaming failed:", error);
   }
 });
+
 
 
     return {

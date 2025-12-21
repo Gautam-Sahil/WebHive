@@ -8,7 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { consumeCredits } from "@/lib/usage";
 
 
-
+// i will find a solution for you
 export const projectsRouter = createTRPCRouter({
     getOne: protectedProcedure
     .input(z.object({

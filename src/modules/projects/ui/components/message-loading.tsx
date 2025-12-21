@@ -15,7 +15,7 @@ const ShimmerMessages = () =>{
     ];
 
     const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-
+    // you need a chnge
     useEffect(() =>{
         const interval = setInterval(() =>{
             setCurrentMessageIndex((prev) =>(prev + 1) % message.length);

@@ -6,7 +6,7 @@
 
 
 
-WebHive is a next-generation AI development platform that allows users to generate, visualize, and deploy web applications in real-time. Unlike standard chatbots, WebHive spins up secure cloud sandboxes to run code live as it's being written.
+WebHive is a next-generation AI development platform that allows users to generate, visualize, and see web applications code in real-time. Unlike standard chatbots, WebHive spins up secure cloud sandboxes to run code live as it's being written.
 
 ![Status](https://img.shields.io/badge/Status-Beta-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16.0-black)

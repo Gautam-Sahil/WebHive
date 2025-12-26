@@ -1,6 +1,6 @@
 # 🕸️ WebHive
 
-**Build full-stack web apps instantly by chatting with AI.**
+**Build web apps instantly by chatting with AI.**
 
 <img width="1918" height="866" alt="Screenshot 2025-12-19 181656" src="https://github.com/user-attachments/assets/23d420cd-6f5c-4e00-82d1-b4006ce8b7d3" />
 

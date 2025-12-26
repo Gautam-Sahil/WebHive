@@ -34,7 +34,7 @@ Built with the **T3 Stack** ideology, leveraging the latest bleeding-edge techno
 
 ### AI & Execution Engine
 - **[E2B Code Interpreter](https://e2b.dev/)** - Secure cloud sandboxes for live code execution.
-- **[OpenRouter API](https://openrouter.ai/)** - Access to top-tier LLMs (Claude 3.5, Llama 3, etc.).
+- **[OpenRouter API](https://openrouter.ai/)** - Access to top-tier LLMs (Claude 3.5, Llama 3, mistral etc.).
 - **[Inngest](https://www.inngest.com/)** (+ Agent Kit) - Durable execution for long-running AI workflows and queues.
 
 ### Backend & Data
